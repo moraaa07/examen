@@ -11,3 +11,9 @@ select NombreCliente, concat(NombreContacto,ApellidoContacto) as Contacto from C
 Select CodigoPedido, CodigoProducto, Cantidad, PrecioUnidad, Cantidad*PrecioUnidad as totalProducto from DetallePedidos LIMIT 10;
 
 
+select Nombre, Apellido1 from Empleados where Puesto='Representante Ventas';
+
+
+## Consultas Avanzadas: 
+
+
