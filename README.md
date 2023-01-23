@@ -16,6 +16,13 @@ ______________
 
 ## Consultas Avanzadas: 
 
+Estructura:
+SELECT [DISTINCT] select_expr [,select_expr] ... [FROM tabla]
+[WHERE filtro]
+[GROUP BY expr [, expr].... ] [HAVING filtro_grupos]
+[ORDER BY {nombre_columna I expr I posición} [ASC I DESC] , ... ]
+
+
 #Consulta 1:
 #Seleccionar los equipos de la nba cuyos jugadores #pesen de media más de 228 libras
 SELECT Nombre_equipo,avg(peso) FROM jugadores GROUP BY Nombre_equipo HAVING avg(peso)>228 ORDER BY avg(peso);
@@ -43,7 +50,15 @@ SELECT Nombre FROM jugadores WHERE '76ers' = jugadores.Nombre_Equipo AND procede
 
 ## Consultas multitabla:
 
+Estructura:
 
+SELECT [DISTINCT] select_expr [,select_expr] ... [FROM referencias_tablas]
+[WHERE filtro]
+[GROUP BY expr [, expr] .... [HAVING filtro_grupos]
+[ORDER BY {nombre_columnas I expr I posición} [ASC I DESC] , ... ]
+
+
+SELECT Empleados.Nombre, COUNT(Pedidos.CodigoPedido) as NumeroOePedidos FROM Clientes, Pedidos, Empleados WHERE Clientes.CodigoCliente=Pedidos.CodigoCliente ANO 12 Empleados CodigoEmpleado = Clientes.CodigoEmpleadoRepVentas GROUP BY Empleados.Nombre ORDER BY NumeroOePedidos;
 
 
 
