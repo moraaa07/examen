@@ -1,208 +1,401 @@
 # examen
 
-## Consultas simples:
+# 1. Proyecto: Añadir cajas
 
-select NombreCliente, telefono from Clientes;
-______________
+## 1.1 Imagen, caja o box
 
-select NombreCliente, concat(NombreContacto,ApellidoContacto) as Contacto from Clientes;
+Existen muchos repositorios desde donde podemos descargar la cajas de Vagrant (Imágenes o boxes). Incluso podemos descargarnos cajas de otros sistemas oprativos desde [VagrantCloud Box List](https://app.vagrantup.com/boxes/search?provider=virtualbox)
 
-______________
-Select CodigoPedido, CodigoProducto, Cantidad, PrecioUnidad, Cantidad*PrecioUnidad as totalProducto from DetallePedidos LIMIT 10;
-______________
+> OJO: Sustituir **BOXNAME** por `ubuntu/bionic64`
 
-select Nombre, Apellido1 from Empleados where Puesto='Representante Ventas';
-______________
+* `vagrant box add BOXNAME`, descargar la caja que necesitamos a través de vagrant.
+* `vagrant box list`, lista las cajas/imágenes disponibles actualmente en nuestra máquina.
 
-## Consultas Avanzadas: 
+```
+> vagrant box list
+BOXNAME (virtualbox, 0)
+```
 
-### Estructura:
+## 1.2 Directorio
 
-SELECT [DISTINCT] select_expr [,select_expr] ... [FROM tabla]
-[WHERE filtro]
-[GROUP BY expr [, expr].... ] [HAVING filtro_grupos]
-[ORDER BY {nombre_columna I expr I posición} [ASC I DESC] , ... ]
+* Crear un directorio para nuestro proyecto. Donde XX es el número de cada alumno:
 
+```
+mkdir nombre-alumnoXX-va1box.d
+cd nombre-alumnoXX-va1box.d
+```
 
-#Consulta 1:
-#Seleccionar los equipos de la nba cuyos jugadores #pesen de media más de 228 libras
-SELECT Nombre_equipo,avg(peso) FROM jugadores GROUP BY Nombre_equipo HAVING avg(peso)>228 ORDER BY avg(peso);
+A partir de ahora vamos a trabajar dentro de esta carpeta.
+* Crear un fichero nuevo llamado `Vagrantfile` con el siguiente contenido:
+```
+Vagrant.configure("2") do |config|
+  config.vm.box = "BOXNAME"
+  config.vm.hostname = "nombre-alumnoXX-va1box"
+  config.vm.provider "virtualbox"
+end
+```
 
-______________
+> INFO: Si quisiéramos partir de un fichero Vagrantfile más complejo, podemos usar el comando `vagrant init` para crear un fichero de ejemplo.
 
-#seleccionar qué equipos de la nba tienen más de 1 jugador español
-SELECT Nombre_equipo,count(*) FROM jugadores WHERE procedencia='Spain' GROUP BY Nombre_equipo HAVING count(*)>l;
+## 1.3 Comprobar
 
-______________
+Vamos a crear una MV nueva y la vamos a iniciar usando Vagrant:
+* Debemos estar dentro de `nombre-alumnoXX-va1box.d`.
+* `vagrant up`, para iniciar una nueva instancia de la máquina.
+* `vagrant ssh`: Conectar/entrar en nuestra máquina virtual usando SSH.
 
-## Subconsultas:
+> DUDAS:
+> * ¿Podría funcionar si tenemos el fichero Vagrantfile en un disco duro externo o pendrive e intentamos levantar la máquina virtual con Vagrant?
+> * ¿Tiene algo que ver que sea un almacenamiento externo o es por el sistema de ficheros?
+> * ¿Qué requisito tiene vagrant con respecto al sistema de ficheros sobre el que va a trabajar?
 
-SELECT nombre FROM jugadores WHERE Nombre_equipo IN (SELECT Nombre FROM equipos WHERE division='SouthWest');
+## 1.4 Eliminamos la MV
 
-______________
+* `exit` para salir fuera de la MV.
+* Ahora estamos en la máquina real.
+* `vagrant halt`, para apagar la máquina virtual.
+* `vagrant status`, consultar el estado actual de la máquina virtual.
+* `vagrant destroy`, para eliminar la máquina virtual (No los ficheros de configuración).
 
-SELECT nombre FROM jugadores WHERE Nombre_equipo IN ('Hornets' ,'Spurs' ,'Rockets' ,'Mavericks' ,'Grizzlies');
+> **Otros comandos últiles de Vagrant son**:
+> * `vagrant suspend`: Suspender la máquina virtual. Tener en cuenta que la MV en modo **suspendido** consume más espacio en disco debido a que el estado de la máquina virtual que suele almacenarse en la RAM se pasa a disco.
+> * `vagrant resume` : Volver a despertar la máquina virtual.
 
-______________
+## 1.5 TEORÍA
 
-#subconsulta ejecutada #1 
-SELECT Nombre FROM jugadores WHERE '76ers' = jugadores.Nombre_Equipo AND procedencia='Spain';
+`NO ES NECESARIO hacer este apartado. Sólo es información.`
 
+A continuación se muestran ejemplos de configuración Vagrantfile que NO ES NECESARIO hacer. Sólo es información.
 
-## Consultas multitabla:
+> Enlace de interés [Tutorial Vagrant. ¿Qué es y cómo usarlo?](https://geekytheory.com/tutorial-vagrant-1-que-es-y-como-usarlo)
 
-### Estructura:
+**Carpetas compartidas**
 
-SELECT [DISTINCT] select_expr [,select_expr] ... [FROM referencias_tablas]
-[WHERE filtro]
-[GROUP BY expr [, expr] .... [HAVING filtro_grupos]
-[ORDER BY {nombre_columnas I expr I posición} [ASC I DESC] , ... ]
+La carpeta del proyecto que contiene el `Vagrantfile` es visible
+para el sistema el virtualizado, esto nos permite compartir archivos fácilmente entre los dos entornos.
 
+Ejemplos para configurar las carpetas compartidas:
+* `config.vm.synced_folder ".", "/vagrant"`: La carpeta del proyecto es accesible desde /vagrant de la MV.
+* `config.vm.synced_folder "html", "/var/www/html"`. La carpeta htdocs del proyecto es accesible desde /var/www/html de la MV.
 
-SELECT Empleados.Nombre, COUNT(Pedidos.CodigoPedido) as NumeroOePedidos FROM Clientes, Pedidos, Empleados WHERE Clientes.CodigoCliente=Pedidos.CodigoCliente ANO 12 Empleados CodigoEmpleado = Clientes.CodigoEmpleadoRepVentas GROUP BY Empleados.Nombre ORDER BY NumeroOePedidos;
+**Configuración de red**
 
+Cuando trabajamos con máquinas virtuales, es frecuente usarlas para proyectos enfocados a la web, y para acceder a las páginas es necesario configurar la red.
 
-## INSERT: 
-INSERT [INTO] nombre_tabla [(nombre_columna, ... )] VALUES ({expr I DEFAULT}, ... )
+* Ejemplo para redirigir los puertos: `config.vm.network :forwarded_port, host: 4567, guest: 80`
+* Ejemplo para configurar la IP: `config.vm.network "private_network", ip: "192.168.33.10"`:
 
-### Ejemplo:
+**Conexión SSH**: Ejemplo para personalizar la conexión SSH a nuestra máquina virtual:
 
-#INSERT especificando la lista de columnas INSERT INTO mascotas (Codigo, Nombre, Raza) VALUES (1,'Pequitas','Gato Común Europeo')
+```
+config.ssh.username = 'root'
+config.ssh.password = 'vagrant'
+config.ssh.insert_key = 'true'
+```
 
+Ejemplo para configurar la ejecución remota de aplicaciones gráficas instaladas en la máquina virtual, mediante SSH:
 
-## INSERT Y SELECT:
-INSERT [INTO] nombre_tabla [(nombre_columna, ... )] SELECT ... FROM ...
+```
+config.ssh.forward_agent = true
+config.ssh.forward_x11 = true
+```
 
-### Ejemplo:
+# 2. Proyecto: Redirección de puertos
 
-#Inserta en una tabla Backup todos los vehículos INSERT INTO BackupVehiculos SELECT * FROM vehiculos;
+Ahora vamos a hacer otro proyecto añadiendo redirección de puertos.
 
+## 2.1 Creamos los ficheros
 
-## UPDATE:
+En la máquina real:
+* Crear carpeta `nombre-alumnoXX-va2port.d`.
+* Entrar en el directorio.
+* Configurar Vagrantfile para usar nuestra caja BOXNAME y hostname = "nombre-alumnoXX-vagrant3".
+* Modificar el fichero `Vagrantfile`, de modo que el puerto 42XX del sistema anfitrión sea enrutado al puerto 80 del ambiente virtualizado.
+  * `config.vm.network :forwarded_port, host: 42XX, guest: 80`, sustituir XX por el número de cada uno. Por ejemplo el PC 1 será 01.
 
-UPDATE nombre_tabla SET nombre_coll=exprl [, nombre_col2=expr2] ... [WHERE filtro]
+Incluir en el fichero `Vagrantfile` las configuraciones necesarias para:
+* La MV de VirtualBox debe tener el nombre `vagrantXX-va2port`.
+* La memoria RAM de la MV en VirtualBox debe ser de 2048 MiB.
 
-### Ejemplo:
+Levantar la MV podemos hace `vagrant up` pero también `time vagrant up` para medir el tiempo que se tarda en levantar la MV. El añadir el comando `time COMMAND` delante de un comando nos calcula el tiempo que tarda en ejecutarse dicho comandos/programa (COMMAND).
 
-UPDATE jugadores SET Nombre_equipo='Knicks' WHERE Nombre='Pau Gasol';
+## 2.2 Entramos en la MV
 
+* Entramos en la MV en la máquina virtual (`vagrant ssh`).
+* Instalamos Apache2.
 
+> NOTA: Cuando la MV está iniciada y si el fichero de configuración ha cambiado y queremos recargarlo (que se vuelva a leer) hacemos `vagrant reload`.
 
-## DELETE:
+## 2.3 Comprobar
 
-DELETE FROM nombre_tabla [WHERE filtro]
+Para confirmar que hay un servicio a la escucha en 4567:
+* Ir a la máquina real.
+* `vagrant port` para ver la redirección de puertos de la máquina Vagrant.
+* Abrir el navegador web con el URL `http://127.0.0.1:42XX`. En realidad estamos accediendo al puerto 80 de nuestro sistema virtualizado.
+* `nmap -Pn localhost`
 
-### Ejemplo:
+## 2.4 Eliminar la MV
 
-DELETE FROM jugadores WHERE Nombre='Jorge Garbajosa';
+(Ya sabes cómo hacerlo)
 
+> Si levantamos 2 MV con Vagrant...
+> * ¿Pueden verse entre ellas? (ping)
+> * En caso negativo ¿cómo podemos configurar la red para que se vean?
 
-## UPDATE y DELETE con subconsultas:
+# 3. Proyecto: Suministro mediante shell script
 
-DELETE FROM Empleados WHERE CodigoEmpleado Not in (SELECT CodigoEmpleadoRepVentas FROM Clientes) AND Puesto='Representante Ventas';
+Una de los mejores aspectos de Vagrant es el uso de herramientas de suministro. Esto es, ejecutar *"una receta"* o una serie de scripts durante el proceso de arranque del entorno virtual para instalar, configurar y personalizar un sin fin de aspectos del SO del sistema anfitrión.
 
-DELETE FROM Clientes WHERE CodigoCliente in (SELECT CodigoCliente FROM Clientes WHERE LimiteCredito=O);
+## 3.1 Crear ficheros
 
+Ahora vamos a suministrar a la MV un pequeño script para instalar Apache.
 
-## Borrado y modificación de registros con relaciones:
+Ejemplo:
+```
+david42-va3script.d
+├── html
+│   └── index.html
+├── install_apache.sh
+└── Vagrantfile
+```
 
-definición_referencia:
-REFERENCES nombre_tabla [(nombre_columna, ... )] [ON DELETE opción_referencia]
-[ON UPDATE opción_referencia]
-opción_referencia:
-CASCADE I SET NULL I NO ACTION
+* Crear directorio `nombre-alumnoXX-va3script.d` para nuestro proyecto.
+* Entrar en dicha carpeta.
+* Crear la carpeta `html` y crear fichero `html/index.html` con el siguiente contenido:
 
+```
+<h1>Proyecto Vagrant4 Scripting</h1>
+<p>FECHA-ACTUAL</p>
+<p>Nombre-del-alumnoXX</p>
+```
 
+* Crear el script `install_apache.sh`, dentro del proyecto con el siguiente
+contenido:
 
-## Procedimientos:
-CREATE PROCEDURE sp_name ([parameter[,...]])
-[characteristic ...] routine_body
-CREATE FUNCTION sp_name ([parameter[,...]])
-RETURNS type
-[characteristic ...] routine_body
-parameter:
-[ IN | OUT | INOUT ] param_name type
-type:
-Any valid MySQL data type
-characteristic:
-LANGUAGE SQL
-| [NOT] DETERMINISTIC
-| { CONTAINS SQL | NO SQL | READS SQL DATA | MODIFIES SQL DATA }
-| SQL SECURITY { DEFINER | INVOKER }
-| COMMENT 'string'
+```
+#!/usr/bin/env bash
 
+echo "[INFO] Script de instalación de apache2 de [nombre-alumnoXX]"
+apt update
+apt install -y apache2
+echo "[INFO] Fin del script: $(date)"
+```
 
-### Ejemplo:
-mysql> delimiter //
-mysql> CREATE PROCEDURE simpleproc (OUT param1 INT)
--> BEGIN
--> SELECT COUNT(*) INTO param1 FROM t;
--> END
--> //
-Query OK, 0 rows affected (0.00 sec)
-mysql> delimiter ;
-mysql> CALL simpleproc(@a);
+## 3.2 Vagrantfile
 
-### Otro ejemplo:
+Incluir en el fichero de configuración `Vagrantfile` lo siguiente:
+* `config.vm.hostname = "nombre-alumnoXX-va3script"`
+* `config.vm.provision :shell, :path => "install_apache.sh"`, para indicar a Vagrant que debe ejecutar el script `install_apache.sh` dentro del entorno virtual.
+* `config.vm.synced_folder "html", "/var/www/html"`, para sincronizar la carpeta exterior `html` con la carpeta interior. De esta forma el fichero "index.html" será visible dentro de la MV.
 
-mysql> delimiter //
-mysql> CREATE PROCEDURE simpleproc (OUT param1 INT)
--> BEGIN
--> SELECT COUNT(*) INTO param1 FROM t;
--> END
--> //
-Query OK, 0 rows affected (0.00 sec)
-mysql> delimiter ;
-mysql> CALL simpleproc(@a);
+Incluir en el fichero `Vagrantfile` las configuraciones necesarias para:
+* La MV de VirtualBox debe tener el nombre `vagrantXX-va3script`.
+* La memoria RAM de la MV en VirtualBox debe ser de 2048 MiB.
 
+## 3.3 Comprobamos
 
-### Ejemplo grande:
+* `vagrant up`, para crear la MV. IMPORTATE: Capturar imagen de todos los comandos y su salida completa.
+* Al iniciar la máquina, aparecen mensajes de salida que muestran información sobre cómo se va instalando el paquete de Apache que indicamos.
+* Para verificar que efectivamente el servidor Apache ha sido instalado e iniciado, abrimos navegador en la máquina real con URL `http://127.0.0.1:42XX`.
 
-`DELIMITER` $$ -- inicio
-`DROP PROCEDURE IF EXISTS sp_productoPorCod$$` -- eliminamos si existe un procedimiento con el mismo nombre
-`CREATE PROCEDURE sp_productoPorCod (IN cod INT)` -- creamos el procedimiento con un parámetro de entrada
-`BEGIN` -- inicio cuerpo procedimiento almacenado
-`DECLARE estadoOfert CHAR(2);` -- declaramos una variable local para almacenar el estado de Oferta.
-/* Hacemos una consulta y el resultado lo almacenamos en la variable declarada*/
-`SELECT oferta INTO estadoOfert FROM productos WHERE oferta = 'SI' AND codproducto = cod;`
-`IF estadoOfert = 'SI' THEN` -- si está en oferta elegimos precio_oferta
-`SELECT codproducto, nombreproduc, precio_oferta FROM productos WHERE codproducto = cod;`
-`ELSE` -- sino el precio_normal
-`SELECT codproducto, nombreproduc, precio_normal FROM productos WHERE codproducto = cod;`
-`END IF;`
-`END $$` -- fin de cuerpo del procedimiento almacenado
-`DELIMITER ;` -- fin
-`call sp_productoPorCod(2);` -- llamamos al procedimiento
+![vagrant-forward-example](./images/vagrant-forward-example.png)
 
+> NOTA: Podemos usar `vagrant reload`, si la MV está en ejecución, para que coja los cambios de configuración sin necesidad de reiniciar.
 
-## ALTER PROCEDURE y ALTER FUNCTION
+# 4. Proyecto: Suministro mediante Puppet
 
-ALTER {PROCEDURE | FUNCTION} sp_name [characteristic ...]
-characteristic:
-{ CONTAINS SQL | NO SQL | READS SQL DATA | MODIFIES SQL DATA }
-| SQL SECURITY { DEFINER | INVOKER }
-| COMMENT 'string'
+Puppet es un orquestador. Sirve para aprovisionar las máquinas locales o remotas sin usar scripting.
 
+> Enlace de interés:
+> * [Crear un entorno de desarrollo con vagrant y puppet](http://developerlover.com/crear-un-entorno-de-desarrollo-con-vagrant-y-puppet/)
+> * `friendsofvagrant.github.io -> Puppet Provisioning`
+>
+> Veamos imágenes de ejemplo (de Aarón Gonźalez Díaz) con Vagrantfile configurado con puppet:
+>
+> ![vagranfile-puppet](./images/vagrantfile-puppet.png)
+>
+> Fichero de configuración de puppet `mipuppet.pp`:
+>
+> ![vagran-puppet-pp-file](./images/vagrant-puppet-pp-file.png)
 
-## DROP PROCEDURE y DROP FUNCTION
+## 4.1 Preparativos
 
-DROP {PROCEDURE | FUNCTION} [IF EXISTS] sp_name
+Se pide hacer lo siguiente.
+* Crear directorio `nombre-alumnoXX-va4puppet.d` como nuevo proyecto Vagrant.
+* Modificar el archivo `Vagrantfile` de la siguiente forma:
 
-## SHOW CREATE PROCEDURE y SHOW CREATE FUNCTION
+```
+Vagrant.configure("2") do |config|
+  ...
+  config.vm.hostname = "nombre-alumnoXX-va4puppet"
+  ...
+  # Nos aseguramos de tener Puppet en la MV antes de usarlo.
+  config.vm.provision "shell", inline: "sudo apt-get update && sudo apt-get install -y puppet"
 
-SHOW CREATE {PROCEDURE | FUNCTION} sp_nam
+  # Hacemos aprovisionamiento con Puppet
+  config.vm.provision "puppet" do |puppet|
+    puppet.manifest_file = "nombre-del-alumnoXX.pp"
+  end
+ end
+```
 
-## SHOW PROCEDURE STATUS y SHOW FUNCTION STATUS
+> Cuando usamos `config.vm.provision "shell", inline: '"echo "Hola"'`, se ejecuta directamente el comando especificado en la MV. Es lo que llamaremos provisión inline.
 
-SHOW {PROCEDURE | FUNCTION} STATUS [LIKE 'pattern']
+* Crear la carpeta `manifests`. OJO: un error muy típico es olvidarnos de la "s" final.
+* Crear el fichero `manifests/nombre-del-alumnoXX.pp`, con las órdenes/instrucciones Puppet necesarias para instalar el software que elijamos. Ejemplo:
 
+```
+package { 'neofetch':
+  ensure => 'present',
+}
+```
 
+> NOTA:
+> * El Puppet es un gestor de infraestructura que veremos en profundidad otra actividad.
+> * Podemos hacer el suministro con otros gestores de infraestructura como Salt-stack. Consultar enlace  [Salt Provisioner](https://www.vagrantup.com/docs/provisioning/salt.html).
 
+## 4.2 Vagrantfile
 
+Incluir en el fichero `Vagrantfile` las configuraciones necesarias para:
+* La MV de VirtualBox debe tener el nombre `vagrantXX-va4puppet`.
+* La memoria RAM de la MV en VirtualBox debe ser de 2048 MiB.
 
+## 4.3 Comprobamos
 
+Para que se apliquen los cambios de configuración tenemos 2 caminos:
+* **Con la MV encendida**
+    1. `vagrant reload`, recargar la configuración.
+    2. `vagrant provision`, volver a ejecutar la provisión.
+* **Con la MV apagada**:
+    1. `vagrant destroy`, destruir la MV.
+    2. `vagrant up` volver a crearla.
 
+Ir a la MV:
+* Comprobar que el software está instalado.
 
+> **PREGUNTA:** ¿Dónde está la caja de Vagrant que nos acabamos de descargar? y ¿dónde está la máquina virtual que se ha creado con Vagrant? ¿No tienes curiosidad?
+> * Consulta el directorio `$HOME/.vagrant.d`
+> * Consulta el directorio `$HOME/Virtual Box`
 
+# 5. Proyecto: Caja personalizada
 
+En los apartados anteriores hemos descargado una caja/box de un repositorio de Internet, y la hemos personalizado. En este apartado vamos a crear nuestra propia caja/box a partir de una MV de VirtualBox que tengamos.
 
+## 5.1 Preparar la MV VirtualBox
+
+> Enlace de interés:
+> * Indicaciones de [¿Cómo crear una Base Box en Vagrant a partir de una máquina virtual](http://www.dbigcloud.com/virtualizacion/146-como-crear-un-vase-box-en-vagrant-a-partir-de-una-maquina-virtual.html) para preparar la MV de VirtualBox.
+
+### Elegir una máquina virtual
+
+Lo primero que tenemos que hacer es preparar nuestra máquina virtual con una determinada configuración para poder publicar nuestro Box.
+
+* Crear una MV VirtualBox nueva o usar una que ya tengamos.
+* Configurar la red en modo automático o dinámico (DHCP).
+* Instalar OpenSSH Server en la MV.
+
+### Crear usuario con acceso SSH
+
+Vamos a crear el usuario `vagrant`. Esto lo hacemos para poder acceder a la máquina virtual por SSH desde fuera con este usuario. Y luego, a este usuario le agregamos una clave pública para autorizar el acceso sin clave desde Vagrant. Veamos cómo:
+
+* Ir a la MV de VirtualBox.
+* Crear el usuario `vagrant`en la MV.
+    * `su`
+    * `useradd -m vagrant`
+* Poner clave "vagrant" al usuario vagrant.
+* Poner clave "vagrant" al usuario root.
+* Configuramos acceso por clave pública al usuario `vagrant`:
+    * `mkdir -pm 700 /home/vagrant/.ssh`, creamos la carpeta de configuración SSH.
+    * `wget --no-check-certificate 'https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub' -O /home/vagrant/.ssh/authorized_keys`, descargamos la clave pública.
+    * `chmod 0600 /home/vagrant/.ssh/authorized_keys`, modificamos los permisos de la carpeta.
+    * `chown -R vagrant /home/vagrant/.ssh`, modificamos el propietario de la carpeta.
+
+> NOTA:
+> * Podemos cambiar los parámetros de configuración del acceso SSH. Mira la teoría...
+> * Ejecuta `vagrant ssh-config`, para averiguar donde está la llave privada para cada máquina.
+
+## Sudoers
+
+Tenemos que conceder permisos al usuario `vagrant` para que pueda hacer tareas privilegiadas como configurar la red, instalar software, montar carpetas compartidas, etc. Para ello debemos configurar el fichero `/etc/sudoers` (Podemos usar el comando `visudo`) para que no nos solicite la password de root, cuando realicemos estas operaciones con el usuario `vagrant`.
+
+* Añadir `vagrant ALL=(ALL) NOPASSWD: ALL` al fichero de configuración `/etc/sudoers`. Comprobar que no existe una linea indicando requiretty si existe la comentamos.
+
+**Añadir las VirtualBox Guest Additions**
+
+* Debemos asegurarnos que tenemos instalado las VirtualBox Guest Additions con una versión compatible con el host anfitrión. Comprobamos:
+```
+root@hostname:~# modinfo vboxguest |grep version
+version:        6.0.24
+```
+* Apagamos la MV.
+
+## 5.2 Crear caja Vagrant
+
+Una vez hemos preparado la máquina virtual ya podemos crear el box.
+
+* Vamos a crear una nueva carpeta `nombre-alumnoXX-va5custom.d`, para este nuevo proyecto vagrant.
+* `VBoxManage list vms`, comando de VirtualBox que muestra los nombres de nuestras MVs. Elegir una de las máquinas (VMNAME).
+* Nos aseguramos que la MV de VirtualBox VMNAME está apagada.
+* `vagrant package --base VMNAME --output nombre-alumnoXX.box`, parar crear nuestra propia caja.
+* Comprobamos que se ha creado el fichero `nombre-alumnoXX.box` en el directorio donde hemos ejecutado el comando.
+* `vagrant box add nombre-alumno/va5custom nombre-alumnoXX.box`, añadimos la nueva caja creada por nosotros, al repositorio local de cajas vagrant de nuestra máquina.
+* Consultar ahora la lista de cajas Vagrant disponibles.
+
+## 5.3 Vagrantfile
+
+* Crear un nuevo fichero Vagrantfile para usar nuestra caja.
+* Incluir en el fichero `Vagrantfile` las configuraciones necesarias para:
+    * La MV de VirtualBox debe tener el nombre `vagrantXX-nombre-alumno`.
+    * La memoria RAM de la MV en VirtualBox debe ser de 2048 MiB.
+
+## 5.4 Usar la nueva caja
+
+* Levantamos una nueva MV a partir del Vagranfile.
+* Nos debemos conectar sin problemas (`vagant ssh`).
+
+# 6. Caja Windows
+
+## 6.1 Windows con vagrant
+
+> OJO: Puede ser que nos haga falta instalar algún plugin de Vagrant:
+> * `vagrant plugin install winrm`
+> *  y puede ser que también haga falta winrm-elevated.
+
+* Crear una MV Windows usando vagrant.
+* Comprobar que funciona.
+
+## 6.2 Limpiar
+
+Cuando terminemos la práctica, ya no nos harán falta las cajas (boxes) que tenemos cargadas en nuestro repositorio local. Por tanto, podemos borrarlas para liberar espacio en disco:
+
+* `vagrant box list`, para consultar las cajas disponibles.
+* `vagrant box remove BOXNAME`, para eliminar una caja BOXNAME de nuestro repositorio local.
+
+> **OPCIONAL**: En una máquina real con SO Windows
+> * Instalar Vagrant en Windows.
+> * Levantar una máquina con Vagrant en Windows
+
+# ANEXO
+
+## Pendiente
+
+* Ampliar esta práctica para comprobar el funcionamiento de Vagrant bajo Windows y usar cajas/boxes vagrant con Windows. Ver ejemplo:
+
+```
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.define "windows10" do |i|
+    i.vm.box = "senglin/win-10-enterprise-vs2015community"
+    i.vm.box_version = "1.0.0"
+    i.vm.hostname = "profesor42w10"
+    i.vm.network "public_network", bridge: [ "eth0" ]
+    i.vm.network :forwarded_port, guest: 80, host: 8081
+    i.vm.provider "virtualbox" do |v|
+      v.name = "windows10-ent-vs2015"
+      v.memory = 2048
+    end
+  end
+end
+```
