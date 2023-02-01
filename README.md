@@ -1,362 +1,403 @@
 # examen
 
-# examen
 
-## Consultas simples:
+___________________________________________
 
-select NombreCliente, telefono from Clientes;
-______________
+# 1. Contenedores con Docker
 
-select NombreCliente, concat(NombreContacto,ApellidoContacto) as Contacto from Clientes;
+> Enlaces de interés
+> * [Curso “Introducción a Docker”](https://sergarb1.github.io/CursoIntroduccionADocker/)
+> * [Docker for beginners](http://prakhar.me/docker-curriculum/)
+> * [getting-started-with-docker](http://www.linux.com/news/enterprise/systems-management/873287-getting-started-with-docker)
+> * [Docker for Beginners](https://testdriven.io/blog/docker-for-beginners/)
 
-______________
-Select CodigoPedido, CodigoProducto, Cantidad, PrecioUnidad, Cantidad*PrecioUnidad as totalProducto from DetallePedidos LIMIT 10;
-______________
+Es muy común que nos encontremos desarrollando una aplicación, y llegue el momento que decidamos tomar todos sus archivos y migrarlos, ya sea al ambiente de producción, de prueba, o simplemente probar su comportamiento en diferentes plataformas y servicios.
 
-select Nombre, Apellido1 from Empleados where Puesto='Representante Ventas';
-______________
+Para este tipo de situaciones existen herramientas que nos facilitan el embalaje y despliegue de la aplicación, es aquí donde entra en juego los contenedores (Por ejemplo Docker o Podman).
 
-## Consultas Avanzadas: 
+Estas herramientas nos permite crear "contenedores", que son aplicaciones empaquetadas auto-suficientes, muy livianas, capaces de funcionar en prácticamente cualquier ambiente, ya que tiene su propio sistema de archivos, librerías, terminal, etc.
 
-### Estructura:
+Docker es una tecnología contenedor de aplicaciones construida sobre LXC.
 
-SELECT [DISTINCT] select_expr [,select_expr] ... [FROM tabla]
-[WHERE filtro]
-[GROUP BY expr [, expr].... ] [HAVING filtro_grupos]
-[ORDER BY {nombre_columna I expr I posición} [ASC I DESC] , ... ]
+Propuesta de rúbrica:
 
+| ID  | Criterio      | Muy bien(2) | Regular(1) | Poco adecuado(0) |
+| --- | ------------- | ----------- | ---------- | ---------------- |
+| 3.2 | Comprobar     ||||
+| 3.3 | Migrar imagen ||||
+| 4.2 | Crear imagen Dockerfile ||||
+| 4.3 | Crear contenedor        ||||
+| 4.4 | Usar imagen de nginx    ||||
+| 5   | Hola Mundo              ||||
 
-#Consulta 1:
-#Seleccionar los equipos de la nba cuyos jugadores #pesen de media más de 228 libras
-SELECT Nombre_equipo,avg(peso) FROM jugadores GROUP BY Nombre_equipo HAVING avg(peso)>228 ORDER BY avg(peso);
+## 1.1 Instalación
 
-______________
+> Enlaces de interés:
+> * [EN - Docker installation on SUSE](https://docs.docker.com/engine/installation/linux/SUSE)
+> * [ES - Curso de Docker en vídeos](jgaitpro.com/cursos/docker/)
 
-#seleccionar qué equipos de la nba tienen más de 1 jugador español
-SELECT Nombre_equipo,count(*) FROM jugadores WHERE procedencia='Spain' GROUP BY Nombre_equipo HAVING count(*)>l;
+Ejecutar como superusuario:
+* `zypper in docker`, instalar docker en OpenSUSE (`apt install docker` en Debian/Ubuntu).
+* `systemctl start docker`, iniciar el servicio. NOTA: El comando `docker daemon` hace el mismo efecto.
+* `systemctl enable docker`, si queremos que el servicio de inicie automáticamente al encender la máquina.
+* `cat /proc/sys/net/ipv4/ip_forward`, consultar el estado de IP_FORWARD. Debe estar activo=1.  
 
-______________
+## 1.2 Primera prueba
 
-## Subconsultas:
+Como usuario root:
+* Incluir a nuestro usuario (nombre-del-alumno) como miembro del grupo `docker`. Solamente los usuarios dentro del grupo `docker` tendrán permiso para usarlo.
+* `id NOMBRE-ALUMNO`, debe mostrar que pertenecemos al grupo `docker`.
+* Cerrar sesión y volver a entrar al sistema con nuestro usuario normal.
 
-SELECT nombre FROM jugadores WHERE Nombre_equipo IN (SELECT Nombre FROM equipos WHERE division='SouthWest');
+Como usuario normal:
+* `docker version`, comprobamos que se muestra la información de las versiones cliente y servidor.
+* `docker run hello-world`, este comando hace lo siguiente:
+    * Descarga una imagen "hello-world"
+    * Crea un contenedor y
+    * ejecuta la aplicación que hay dentro.
+* `docker images`, ahora vemos la nueva imagen "hello-world" descargada en nuestro equipo local.
+* `docker ps -a`, vemos que hay un contenedor en estado 'Exited'.
+* `docker stop IDContainer`, parar el conteneder identificado por su IDContainer. Este valor lo obtenemos tras consultar la salida del comando anterior (docker ps -a).
+* `docker rm IDContainer`, eliminar el contenedor.
 
-______________
+Hemos comprobado que Docker funciona correctamente.
 
-SELECT nombre FROM jugadores WHERE Nombre_equipo IN ('Hornets' ,'Spurs' ,'Rockets' ,'Mavericks' ,'Grizzlies');
+## 1.3 TEORIA: Sólo para LEER
 
-______________
+Tabla de referencia para no perderse:
 
-#subconsulta ejecutada #1 
-SELECT Nombre FROM jugadores WHERE '76ers' = jugadores.Nombre_Equipo AND procedencia='Spain';
+| Software   | Base   | Sirve para crear   | Aplicaciones |
+| ---------- | ------ | ------------------ | ------------ |
+| VirtualBox | ISO    | Máquinas virtuales | N |
+| Vagrant    | Box    | Máquinas virtuales | N |
+| Docker     | Imagen | Contenedores       | 1 |
 
+Veamos cómo es el flujo de trabajo con los contenedores Docker:
 
-## Consultas multitabla:
+![](images/docker-flujo.png)
 
-### Estructura:
+Comandos útiles de Docker:
 
-SELECT [DISTINCT] select_expr [,select_expr] ... [FROM referencias_tablas]
-[WHERE filtro]
-[GROUP BY expr [, expr] .... [HAVING filtro_grupos]
-[ORDER BY {nombre_columnas I expr I posición} [ASC I DESC] , ... ]
+| Comando                   | Descripción           |
+| ------------------------- | --------------------- |
+| docker stop CONTAINERID   | Parar un contenedor   |
+| docker start CONTAINERID  | Iniciar un contenedor |
+| docker attach CONTAINERID | Conectar el terminal actual con el contenedor |
+| docker ps                 | mostrar los contenedores en ejecución |
+| docker ps -a              | mostrar todos los contenedores (en ejecución o no) |
+| docker rm CONTAINERID     | Eliminar un contenedor |
+| docker rmi IMAGENAME      | Eliminar una imagen    |
 
+## 1.4 Alias
 
-SELECT Empleados.Nombre, COUNT(Pedidos.CodigoPedido) as NumeroOePedidos FROM Clientes, Pedidos, Empleados WHERE Clientes.CodigoCliente=Pedidos.CodigoCliente ANO 12 Empleados CodigoEmpleado = Clientes.CodigoEmpleadoRepVentas GROUP BY Empleados.Nombre ORDER BY NumeroOePedidos;
+Para ayudarnos a trabajar de forma más rápida con la línea de comandos podemos agregaremos `alias d='docker'` a nuestro fichero `$HOME/.alias`.
 
+Ahora `d ps` equivale a `docker ps`.
 
-## INSERT: 
-INSERT [INTO] nombre_tabla [(nombre_columna, ... )] VALUES ({expr I DEFAULT}, ... )
+# 2. Creación manual de nuestra imagen
 
-### Ejemplo:
+Nuestro SO base es OpenSUSE, pero vamos a crear un contenedor Debian,
+y dentro instalaremos Nginx.
 
-#INSERT especificando la lista de columnas INSERT INTO mascotas (Codigo, Nombre, Raza) VALUES (1,'Pequitas','Gato Común Europeo')
+## 2.1 Crear un contenedor manualmente
 
+**Descargar una imagen**
+* `docker search debian`, buscamos en los repositorios de Docker Hub contenedores con la etiqueta `debian`.
+* `docker pull debian`, descargamos una imagen en local.
+* `docker images`, comprobamos que se ha descargado.
 
-## INSERT Y SELECT:
-INSERT [INTO] nombre_tabla [(nombre_columna, ... )] SELECT ... FROM ...
+**Crear un contenedor**: Vamos a crear un contenedor con nombre `app1debian` a partir de la imagen `debian`, y ejecutaremos el programa `/bin/bash` dentro del contendor:
+* `docker run --name=app1debian -i -t debian /bin/bash`
 
-### Ejemplo:
+| Parámetro  | Descripción |
+| ---------- | ----------- |
+| docker run | Crea un contenedor y lo pone en ejecución |
+| -name      | Nombre del nuevo contenedor |
+| -i         | Abrir una sesión interactiva |
+| -t         | Imagen que se usará para crear el contenedor |
+| /bin/bash  | Es la aplicación que se va a ejecutar |
 
-#Inserta en una tabla Backup todos los vehículos INSERT INTO BackupVehiculos SELECT * FROM vehiculos;
+## 2.2 Personalizar el contenedor
 
+Ahora estamos dentro del contenedor, y vamos a personalizarlo a nuestro gusto:
 
-## UPDATE:
+**Instalar aplicaciones dentro del contenedor**
 
-UPDATE nombre_tabla SET nombre_coll=exprl [, nombre_col2=expr2] ... [WHERE filtro]
+```
+root@IDContenedor:/# cat /etc/motd            # Comprobamos que estamos en Debian
+root@IDContenedor:/# apt update
+root@IDContenedor:/# apt install -y nginx # Instalamos nginx en el contenedor
+root@IDContenedor:/# apt install -y nano  # Instalamos editor nano en el contenedor
+```
 
-### Ejemplo:
+**Crear un fichero HTML** `holamundo1.html`.
 
-UPDATE jugadores SET Nombre_equipo='Knicks' WHERE Nombre='Pau Gasol';
+```
+root@IDContenedor:/# echo "<p>Hola nombre-del-alumno</p>" > /var/www/html/holamundo1.html
+```
 
+**Crear un script** `/root/server.sh` con el siguiente contenido:
 
+```
+#!/bin/bash
+echo "[INFO] Iniciando Nginx!"
+/usr/sbin/nginx &
 
-## DELETE:
+echo "[INFO] No cierres esta terminal y abre una nueva"
+while(true) do
+  sleep 60
+done
+```
 
-DELETE FROM nombre_tabla [WHERE filtro]
+**Recordatorio:**
+* Hay que poner permisos de ejecución al script para que se pueda ejecutar (`chmod +x /root/server.sh`).
+* La primera línea de un script, siempre debe comenzar por `#!/`, sin espacios.
+* Este script inicia el programa/servicio y entra en un bucle, para mantener el contenedor activo y que no se cierre al terminar la aplicación.
 
-### Ejemplo:
+## 2.3 Crear una imagen a partir del contenedor
 
-DELETE FROM jugadores WHERE Nombre='Jorge Garbajosa';
+Ya tenemos nuestro contenedor auto-suficiente de Nginx, ahora vamos a crear una nueva imagen que incluya los cambios que hemos hecho.
 
+* Abrir otra ventana de terminal.
+* `docker commit app1debian nombre-del-alumno/nginx1`, a partir del contenedor modificado vamos a crear la nueva imagen que se llamará "nombre-del-alumno/nginx1".
 
-## UPDATE y DELETE con subconsultas:
+> NOTA:
+>
+> * Los estándares de Docker estipulan que los nombres de las imágenes deben seguir el formato `nombreusuario/nombreimagen`.
+> * Todo cambio realizado que no se acompañe de un commit a la imagen, se perderá en cuanto se cierre el contenedor.
 
-DELETE FROM Empleados WHERE CodigoEmpleado Not in (SELECT CodigoEmpleadoRepVentas FROM Clientes) AND Puesto='Representante Ventas';
+* `docker images`, comprobamos que se ha creado la nueva imagen.
+* Ahora podemos parar el contenedor, `docker stop app1debian` y
+* Eliminar el contenedor, `docker rm app1debian`.
 
-DELETE FROM Clientes WHERE CodigoCliente in (SELECT CodigoCliente FROM Clientes WHERE LimiteCredito=O);
+# 3. Crear contenedor a partir de nuestra nueva imagen
 
+## 3.1 Crear contenedor con Nginx
 
-## Borrado y modificación de registros con relaciones:
+Ya tenemos una imagen "nombre-alumno/nginx" con Nginx preinstalado dentro.
+* `docker run --name=app2nginx1 -p 80 -t nombre-alumno/nginx1 /root/server.sh`, iniciar el contenedor a partir de la imagen anterior.
 
-definición_referencia:
-REFERENCES nombre_tabla [(nombre_columna, ... )] [ON DELETE opción_referencia]
-[ON UPDATE opción_referencia]
-opción_referencia:
-CASCADE I SET NULL I NO ACTION
+> El argumento `-p 80` le indica a Docker que debe mapear el puerto especificado del contenedor, en nuestro caso el puerto 80 es el puerto por defecto sobre el cual se levanta Nginx.
 
+* No cierres la terminal. El contenedor ya está en ejecución y se queda esperando a que nos conectemos a él usando un navegador.
+* Seguimos.
 
+## 3.2 Comprobamos
 
-## Procedimientos:
-CREATE PROCEDURE sp_name ([parameter[,...]])
-[characteristic ...] routine_body
-CREATE FUNCTION sp_name ([parameter[,...]])
-RETURNS type
-[characteristic ...] routine_body
-parameter:
-[ IN | OUT | INOUT ] param_name type
-type:
-Any valid MySQL data type
-characteristic:
-LANGUAGE SQL
-| [NOT] DETERMINISTIC
-| { CONTAINS SQL | NO SQL | READS SQL DATA | MODIFIES SQL DATA }
-| SQL SECURITY { DEFINER | INVOKER }
-| COMMENT 'string'
+* Abrimos una nueva terminal.
+* `docker ps`, nos muestra los contenedores en ejecución. Podemos apreciar que la última columna nos indica que el puerto 80 del contenedor está redireccionado a un puerto local `0.0.0.0.:PORT -> 80/tcp`.
+* Abrir navegador web y poner URL `0.0.0.0.:PORT`. De esta forma nos conectaremos con el servidor Nginx que se está ejecutando dentro del contenedor.
 
+![docker-url-nginx.png](./images/docker-url-nginx.png)
 
-### Ejemplo:
-mysql> delimiter //
-mysql> CREATE PROCEDURE simpleproc (OUT param1 INT)
--> BEGIN
--> SELECT COUNT(*) INTO param1 FROM t;
--> END
--> //
-Query OK, 0 rows affected (0.00 sec)
-mysql> delimiter ;
-mysql> CALL simpleproc(@a);
+* Comprobar el acceso al fichero HTML. Abrir navegador web y poner URL `0.0.0.0.:PORT/holamundo1.html`.
+* Paramos el contenedor `app2nginx1` y lo eliminamos.
 
-### Otro ejemplo:
+Como ya tenemos una imagen docker con Nginx (Servidor Web), podremos crear nuevos contenedores cuando lo necesitemos.
 
-mysql> delimiter //
-mysql> CREATE PROCEDURE simpleproc (OUT param1 INT)
--> BEGIN
--> SELECT COUNT(*) INTO param1 FROM t;
--> END
--> //
-Query OK, 0 rows affected (0.00 sec)
-mysql> delimiter ;
-mysql> CALL simpleproc(@a);
+## 3.3 Migrar la imagen a otra máquina
 
+¿Cómo puedo llevar los contenedores Docker a un nuevo servidor?
 
-### Ejemplo grande:
+> Enlaces de interés
+>
+> * https://www.odooargentina.com/forum/ayuda-1/question/migrar-todo-a-otro-servidor-imagenes-docker-397
+> * http://linoxide.com/linux-how-to/backup-restore-migrate-containers-docker/
 
-`DELIMITER` $$ -- inicio
-`DROP PROCEDURE IF EXISTS sp_productoPorCod$$` -- eliminamos si existe un procedimiento con el mismo nombre
-`CREATE PROCEDURE sp_productoPorCod (IN cod INT)` -- creamos el procedimiento con un parámetro de entrada
-`BEGIN` -- inicio cuerpo procedimiento almacenado
-`DECLARE estadoOfert CHAR(2);` -- declaramos una variable local para almacenar el estado de Oferta.
-/* Hacemos una consulta y el resultado lo almacenamos en la variable declarada*/
-`SELECT oferta INTO estadoOfert FROM productos WHERE oferta = 'SI' AND codproducto = cod;`
-`IF estadoOfert = 'SI' THEN` -- si está en oferta elegimos precio_oferta
-`SELECT codproducto, nombreproduc, precio_oferta FROM productos WHERE codproducto = cod;`
-`ELSE` -- sino el precio_normal
-`SELECT codproducto, nombreproduc, precio_normal FROM productos WHERE codproducto = cod;`
-`END IF;`
-`END $$` -- fin de cuerpo del procedimiento almacenado
-`DELIMITER ;` -- fin
-`call sp_productoPorCod(2);` -- llamamos al procedimiento
+**Exportar** imagen Docker a fichero tar:
+* `docker save -o alumnoXXdocker.tar nombre-alumno/nginx1`, guardamos la imagen
+"nombre-alumno/nginx1" en un fichero tar.
 
+Intercambiar nuestra imagen exportada con la de un compañero de clase.
 
-## ALTER PROCEDURE y ALTER FUNCTION
+**Importar** imagen Docker desde fichero:
+* Coger la imagen de un compañero de clase.
+* Nos llevamos el tar a otra máquina con docker instalado, y restauramos.
+* `docker load -i alumnoXXdocker.tar`, cargamos la imagen docker a partir del fichero tar. Cuando se importa una imagen se muestra en pantalla las capas que tiene. Las capas las veremos en un momento.
+* `docker images`, comprobamos que la nueva imagen está disponible.
+* Probar a crear un contenedor (`app3tar`), a partir de la nueva imagen.
 
-ALTER {PROCEDURE | FUNCTION} sp_name [characteristic ...]
-characteristic:
-{ CONTAINS SQL | NO SQL | READS SQL DATA | MODIFIES SQL DATA }
-| SQL SECURITY { DEFINER | INVOKER }
-| COMMENT 'string'
+## 3.4 Capas
 
+**Teoría sobre las capas**. Las imágenes de docker están creadas a partir de capas que van definidas en el fichero Dockerfile. Una de las ventajas de este sistema es que esas capas son cacheadas y se pueden compartir entre distintas imágenes, esto es que si por ejemplo la creación de nuestra imagen consta de 10 capas, y modificamos una de esas capas, a la hora de volver a construir la imagen solo se debe ejecutar esta nueva capa, el resto permanecen igual.
 
-## DROP PROCEDURE y DROP FUNCTION
+Estas capas a parte de ahorrarnos peticiones de red al bajarnos una nueva versión de una imagen también ahorra espacio en disco, ya que las capas que no se hayan cambiado entre versiones no se descargarán.
 
-DROP {PROCEDURE | FUNCTION} [IF EXISTS] sp_name
+* `docker image history nombre_imagen:latest`, para consultar las capas de la imagen del compañero.
 
-## SHOW CREATE PROCEDURE y SHOW CREATE FUNCTION
+# 4. Dockerfile
 
-SHOW CREATE {PROCEDURE | FUNCTION} sp_nam
+Ahora vamos a conseguir el mismo resultado del apartado anterior, pero
+usando un fichero de configuración. Esto es, vamos a crear un contenedor a partir de un fichero `Dockerfile`.
 
-## SHOW PROCEDURE STATUS y SHOW FUNCTION STATUS
+## 4.1 Preparar ficheros
 
-SHOW {PROCEDURE | FUNCTION} STATUS [LIKE 'pattern']
+* Crear directorio `/home/nombre-alumno/dockerXXlocal`.
+* Entrar el directorio anterior.
+* Crear fichero `holamundo2.html` con el siguiente contenido:
+```
+Proyecto : dockerXXlocal
+Autor    : Nombre del alumno
+Fecha    : Fecha actual
+```
+* Crear el fichero `Dockerfile` con el siguiente contenido:
 
+```
+FROM debian
 
+MAINTAINER nombre-del-alumnoXX 1.0
 
-_______________________________________________________
+RUN apt update
+RUN apt install -y apt-utils
+RUN apt install -y nginx
 
+COPY holamundo2.html /var/www/html
+RUN chmod 666 /var/www/html/holamundo2.html
 
-#1. Hacer un procedimiento que reciba como parámetro un código de empleado y
-#devuelva su nombre.
+EXPOSE 80
 
-delimiter //
-drop procedure if exists act1//
-create procedure act1 (in cod1 int, out nomb1 varchar(50))
-begin
-	select nombre into nomb1 from empleados where CodigoEmpleado=cod1;
-end
-//
+CMD ["/usr/sbin/nginx", "-g", "daemon off;"]
+```
 
-delimiter ;
-call act1(2,@jesucristo);
+> * Enlace de interés: https://docs.nginx.com/nginx/admin-guide/installing-nginx/installing-nginx-docker/
 
-select @jesucristo as nombre;
-select * from empleados;
+Descripción de los parámetros del Dockerfile:
 
-#2. Hacer un procedimiento que permita borrar un empleado cuyo número se pasará en la
-#llamada.
+| Parámetro  | Descripción |
+| ---------- | ----------- |
+| FROM       | Imagen a partir de la cual se creará el contenedor |
+| MAINTAINER | Información del autor |
+| RUN        | Comando que se ejeuctará dentro del contenedor |
+| COPY       | Copiar un fichero dentro del contenedor |
+| EXPOSE     | Puerto de contenedor que será visible desde el exterior |
+| CMD        | Comando que se ejecutará al iniciar el contenedor |
 
-delimiter //
-drop procedure if exists act2//
-create procedure act2 (cod2 int)
-	begin
-		delete from empleados where CodigoEmpleado=cod2;
-    end
-//
-delimiter ;
-start transaction;
-call act2(6);
-rollback;
+> Ahora no nos hace falta el script /root/server.sh que mantenía la aplicación "despierta" porque estamos invocando (Instrucción CMD) al servidor Nginx con los parámetros "-g" y "daemon off;" que mantienen el servicio activo.
 
+## 4.2 Crear imagen a partir del `Dockerfile`
 
+El fichero Dockerfile contiene toda la información necesaria para construir el contenedor, veamos:
 
-#3. Hacer un procedimiento que modifique la localidad de un CLIENTE. El procedimiento
-#recibirá como parámetros el número del empleado y la localidad nueva.
+* `cd dockerXXlocal`, entramos al directorio con el Dockerfile.
+* `docker build -t nombre-alumno/nginx2 .`, construye una nueva imagen a partir del Dockerfile. OJO: el punto final es necesario.
+* `docker images`, ahora debe aparecer nuestra nueva imagen.
 
+## 4.3 Crear contenedor y comprobar
 
+A continuación vamos a crear un contenedor con el nombre `app4nginx2`, a partir de la imagen `nombre-alumno/nginx2`. Probaremos con:
 
-delimiter //
+```
+docker run --name=app4nginx2 -p 8082:80 -t nombre-alumno/nginx2
+```
 
-drop procedure if exists act3//
-create procedure act3(in cod1 int,in loc1 varchar(50))
-begin
-    update clientes
-    set LineaDireccion1=loc1
-    where CodigoCliente=cod1;
-end
-//
-delimiter ;
-		#comprobaciones
+* El terminal se ha quedado "bloqueado" porque el comando anterior no ha terminado y lo hemos lanzado en primer plano (foreground). Vamos a abrir otro terminal.
 
+Desde otra terminal:
+* `docker ps`, para comprobar que el contenedor está en ejecución y en escucha por el puerto deseado.
+* Comprobar en el navegador:
+    * URL `http://localhost:PORTNUMBER`
+    * URL `http://localhost:PORTNUMBER/holamundo2.html`
 
-start transaction;
+Ahora que sabemos usar los ficheros Dockerfile, vemos que es más sencillo usar estos ficheros para intercambiar con nuestros compañeros que las herramientas de exportar/importar que usamos anteriormente.
 
-call act3(1,'C/Rusia');
+## 4.4 Usar imágenes ya creadas
 
+El ejemplo anterior donde creábamos una imagen Docker con Nginx, pero esto se puede simplificar aún más si aprovechamos las imágenes oficiales que ya existen.
 
-rollback;
+> Enlace de interés:
+> * [nginx - Docker Official Images] https://hub.docker.com/_/nginx
 
-#4. Crear un procedimiento que calcule la cantidad de productos que tenemos en la tabla
-#productos, y guarde su valor en una variable local, y luego la visualice.
+* Crea el directorio `dockerXXweb`. Entrar al directorio.
+* Crear fichero `holamundo3.html` con:
+    * Proyecto: dockerXXb
+    * Autor: Nombre del alumno
+    * Fecha: Fecha actual
+* Crea el siguiente `Dockerfile`
 
-delimiter //
+```
+FROM nginx
 
-drop procedure if exists act4//
-create procedure act4 ()
-begin
-	declare var4 int;
-	select count(*) into var4 from productos;
-    select var4;
-end
-//
-delimiter ;
+COPY holamundo3.html /usr/share/nginx/html
+RUN chmod 666 /usr/share/nginx/html/holamundo3.html
+```
 
-call act4();
+* Poner el el directorio `dockerXXb` los ficheros que se requieran para construir el contenedor.
+* `docker build -t nombre-alumno/nginx3 .`, crear la imagen.
+* `docker run -d --name=app5nginx3 -p 8083:80 nombre-alumno/nginx3`, crear contenedor. En este caso hemos añadido la opción "-d" que sirve para ejecutar el contenedor en segundo plano (background).
 
+| Parámetro            | Descripción |
+| -------------------- | ----------- |
+| docker run -d        | Crea un contenedor y lo ejecuta en segundo plano |
+| --name               | Nombre del nuevo contenedor |
+| -p                   | Redirección de puertos |
+|                      | Se expone el puerto 80 del contenedor por le puerto 8083 de la máquina anfitrión |
+| nombre-alumno/nginx3 | Imagen que se usará para crear el contenedor |
 
-#5.-Crear un procedimiento que visualice los productos que empiecen por una letra que se
-#pasa desde la llamada. Uso call buscar_producto(‘f%’); ¿Qué pasaría si no pasamos él %?,
-#¿Y cómo lo podríamos solucionar? Pista: usar función concat()
+* Comprobar el acceso a "holamundo3.html".
 
-delimiter //
+# 5. Docker Hub
 
-drop procedure if exists act5 //
+Ahora vamos a crear un contenedor "holamundo" y subirlo a Docker Hub.
 
-create procedure act5 (in var5 varchar(70))
-begin
- select nombre from productos where nombre like var5;
-end
-//
-delimiter ;
+## 5.1 Creamos los ficheros necesarios
 
-call act5('f%');
+Crear nuestra imagen "holamundo":
 
-# Si no ponemos F% no saldrian los que empiezan, sino solo los que se llaman f, se puede solucionar asi:
+* Crear carpeta `dockerXXpush`. Entrar en la carpeta.
+* Crear un script (`holamundoXX.sh`) con lo siguiente:
 
-delimiter //
+```
+#!/bin/sh
+echo "Hola Mundo!"
+echo "nombre-del-alumnoXX"
+echo "Proyecto dockerXXpush"
+date
+```
 
-drop procedure if exists act5 //
+Este script muestra varios mensajes por pantalla al ejecutarse.
 
-create procedure act5 (in var5 varchar(70))
-begin
- select nombre from productos where nombre like concat(var5,'%');
-end
-//
-delimiter ;
+* Crear fichero Dockerfile
 
-call act5('h');
+```
+FROM busybox
+MAINTAINER nombre-del-alumnoXX 1.0
 
+COPY holamundoXX.sh /root
+RUN chmod 755 /root/holamundoXX.sh
 
+CMD ["/root/holamundoXX.sh"]
+```
 
-#6.-Modificar el procedimiento anterior, y llámalo con otro nombre para que también
-#devuelva el total de productos encontrados, para ello usar un parámetro out.
+* A partir del Dockerfile anterior crearemos la imagen `nombre-alumno/holamundo`.
+* Comprobar que `docker run nombre-alumno/holamundo` se crea un contenedor que ejecuta el script. Eliminar el contenedor si todo va bien.
 
-delimiter //
+## 5.2 Subir la imagen a Docker Hub
 
-drop procedure if exists act6 //
+* Registrarse en Docker Hub.
+* `docker login -u USUARIO-DOCKER`, para abrir la conexión.
+* `docker tag nombre-alumno/holamundo:latest USUARIO-DOCKER/holamundo:version1`, etiquetamos la imagen con "version1".
+* `docker push USUARIO-DOCKER/holamundo:version1`, para subir la imagen (version1) a los repositorios de Docker.
 
-create procedure act6 (in var6 varchar(70), out total6 int)
-begin
- select nombre from productos where nombre like concat(var6,'%');
- select count(*) into total6 from productos where nombre like concat(var6,'%');
-end
-//
-delimiter ;
+## 5.3 Analizar y entender
 
-call act6('h',@total6);
+Analizar y entender el siguiente Dockerfile (https://github.com/pausoft/docker)
+* Explicar qué utilidad tiene y cómo lo hace.
+
 
-select @total6;
+# 6. Limpiar contenedores e imágenes
 
+Cuando terminamos con los contenedores, y ya no lo necesitamos, es buena idea pararlos y/o destruirlos.
 
+* `docker ps -a`, identificar todos los contenedores que tenemos.
+* `docker stop ...`, parar todos los contenedores.
+* `docker rm ...`, eliminar los contenedores.
 
+Hacemos lo mismo con las imágenes. Como ya no las necesitamos las eliminamos:
 
-#7.-Crear un procedimiento almacenado para que liste los clientes ordenados por
-#apellidos y nombre. (No hay que pasar ningún parámetro).
+* `docker images`, identificar todas las imágenes.
+* `docker rmi ...`, eliminar las imágenes.
 
-
-delimiter //
-
-drop procedure if exists act7//
-
-create procedure act7 ()
-begin
-select * from clientes order by apellidocontacto, nombrecontacto;
-end
-//
-
-delimiter ;
-
-call act7 ();
-
-
-
+---
 
 
 
