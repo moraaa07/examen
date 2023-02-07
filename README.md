@@ -1,5 +1,138 @@
 # examen
 
+
+---------------
+
+_______________
+
+Trigger : para insertar 
+
+CREATE TRIGGER Inserta_auditoria_clientes AFTER INSERT ON clientes
+FOR EACH ROW
+
+begin set 
+
+INSERT INTO auditoria_clientes(nombre_nuevo, seccion_nueva, usuario,
+modificado, proceso, Id_Cliente)
+VALUES (NEW.nombre, NEW.seccion, CURRENT_USER(), NOW(),
+NEW.Accion, NEW.id_cliente );
+
+--------------
+
+______________
+
+Trigger: para modificar
+
+CREATE TRIGGER Modifica_auditoria_clientes BEFORE UPDATE ON clientes
+FOR EACH ROW
+INSERT INTO auditoria_clientes(nombre_anterior, seccion_anterior,
+nombre_nuevo, seccion_nueva, usuario, modificado, Id_Cliente)
+VALUES (OLD.nombre, OLD.seccion, NEW.nombre, NEW.seccion,
+CURRENT_USER(), NOW(), NEW.id_cliente);
+
+----------------
+________________
+
+Trigger : para eliminar
+
+CREATE TRIGGER Elimina_auditoria_clientes AFTER DELETE ON clientes
+FOR EACH ROW
+INSERT INTO auditoria_clientes(nombre_anterior, seccion_anterior,
+usuario, modificado, Id_Cliente)
+VALUES (OLD.nombre, OLD.seccion, CURRENT_USER(), NOW(),
+OLD.id_cliente);
+
+
+----------------
+________________
+
+Insert:
+
+INSERT INTO clientes (nombre, seccion) VALUES
+('Miguel','informatica'),
+('Rosa','comida'),
+('Maria','ropa'),
+('Albert','informatica'),
+('Jordi','comida');
+
+
+------------------
+__________________
+
+
+
+
+### Se pide crear un disparador de nombre calc_valorventa asociado a la 
+tabla productos para que antes de insertar un 
+nuevo producto calcule el valor de venta con la fórmula siguiente
+
+
+DELIMITER $$ 
+Drop trigger if exists calc_valorventa
+$$
+create trigger calc_valorventa before insert
+on productos for each row
+begin
+set new.Valorventa = new.Costo+ new.Costo*new.porgana/100;
+end
+$$
+DELIMITER;
+
+
+### La “idea” es crear un trigger que antes de actualizar un producto vuelva a calcular el valor de venta.
+
+DELIMITER $$ 
+drop trigger if exists act_valorventa
+$$
+create trigger act_valorventa before update
+on productos for each row
+begin
+set new.Valorventa = new.Costo+ new.Costo*new.porgana/100;
+end
+$$ 
+DELIMITER;
+
+### Preparar un disparador, para controlar que si  no se introduce porcentaje  
+de venta en una inserción, es decir es NULL ó 0, se aplique por defecto un  20%.
+Este disparador se debe ejecutar antes que el del ejercicio 1, así que 
+se debe usar la opción precedes para cambiar el orden de los disparadores.
+
+DELIMITER $$
+drop trigger if exists porct_valorventa
+$$
+create trigger porct_valorventa before insert
+on productos for each row
+precedes calc_valorventa
+begin
+if new.porgana='0' or new.porgana is null then 
+set new.porgana='20';
+end if;
+end
+$$
+DELIMITER ;
+
+### Crear una tabla nueva de nombre borrados_prod, con los mismos campos que productos 
+más un campo fecha y otro campo usuario.
+A continuación crear un disparador que se active antes del delete de un producto. 
+El disparador insertara todos los datos old del procucto a borrar en la tabla nueva. 
+Para la fecha usamos curdate() y para el usuario user()
+Hacer un borrado de un producto y hacer comprobaciones en la nueva tabla.
+
+DELIMITER $$ 
+
+drop trigger if exists del_valorventa
+$$
+
+create trigger del_valorventa before delete
+on productos for each row
+begin 
+insert into borrados_prod values (old.codigo, old.nombre, old.porgana, old.Costo, old.Valorventa, old.cantidad,
+curdate(), user());
+end
+$$
+DELIMITER ;
+
+
 Disparadores (triggers)
 1. Rol
 
@@ -99,7 +232,8 @@ mysql> CREATE TABLE logs_history (
  server
 enum(’host01’,’host02’,’host03’,’host04’,’host05’,’host06’,
 ’host07’,
-- 2 - © Éditions ENI – Todos los derechos reservados – Copia personal de MARIA LUZ LORENZO GARCIA
+
+
 
 Es posible utilizar en el cuerpo de los disparadores las mismas funciones que en una rutina almacenada para, como 
 en el ejemplo, filtrar algunos elementos para el histórico de modificaciones. No existe ninguna instrucción para hacer 
@@ -160,3 +294,5 @@ en una tabla con un disparador: el riesgo de problemas de rendimiento es alto.
 No es posible llamar a un procedimiento que devuelve registros al disparador.
 No está permitido poner disparadores en las tablas del sistema del esquema mysql.
 Los disparadores no son ejecutados por las acciones de claves externas.
+
+
