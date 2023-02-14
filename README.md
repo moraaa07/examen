@@ -44,6 +44,8 @@ OLD.id_cliente);
 
 ----------------
 ________________
+## INSERT
+
 
 /*1. Crear un trigger de nombre, nombrealumn@_validar, 
 para que se dispare antes de un evento
@@ -85,6 +87,8 @@ end //
 
 DELIMITER ;
 
+## DELETE
+
 /*2. Crear un trigger, de nombre alumno borrado, para que antes de cada borrado, 
 se anote en la tabla de "borrados" (como si fuese una copia de seguridad) 
 los datos que se van a borrar de la tabla persona*/
@@ -105,6 +109,8 @@ delete from persona where codigo = '1';
 delete from persona where codigo = 'p';
 
 delimiter //
+
+## UPDATE
 
 /*3. Crear un trigger, de nombre alumno_actualiza, que antes de actualizar 
 en la tabla persona, inserte en la tabla nuevosDatos el código nuevo, 
