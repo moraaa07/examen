@@ -70,9 +70,32 @@ are: We, You, They
 
 ### Relativos ###
 
-WHO – THAT : persona
-Which – THAT : objeto
-Whose (cuyo-cuya): Posesión
-Where: Lugares
-When: Momentos
-Why: Razones
+-WHO – THAT : persona
+-Which – THAT : objeto
+-Whose (cuyo-cuya): Posesión
+-Where: Lugares
+-When: Momentos
+-Why: Razones
+-What(lo que)
+
+
+Vocabulario:
+
+Encender:turn on
+apagar: turn off
+borrar: Erase
+conectar:connect
+teclear: type
+subir: upload
+desplazar: scroll
+hackear: HAck up
+teclaflechas: arow key
+bloqueo mayus: caps lock key
+tecla eliminar: delete key
+teclamayus: shift key
+teclatabulacion: tab key
+punto: full stop
+@: At symbol
+&: ampersand
+guion: hyphen
+guion bajo: Underscore
